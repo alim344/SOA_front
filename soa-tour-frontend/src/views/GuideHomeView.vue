@@ -35,7 +35,8 @@
     </aside>
 
     <main class="content-area">
-      <AllTours v-if="activeTab === 'allTours'"  />
+     <AllTours v-if="activeTab === 'allTours'" @view-tour="handleViewTour" />
+    <TourDetail v-else-if="activeTab === 'tourDetail'" :tour-id="selectedTourId" @back="setActiveTab('allTours')" />
 
       <div v-else-if="activeTab === 'allBlogs'" class="content-panel">
         <h2>All Blogs</h2>
@@ -57,20 +58,26 @@
 
 <script>
 import AllTours from './Guide/AllTours.vue';
+import TourDetail from './TourDetail.vue';
 export default {
   name: "TourGuideSideBar",
   components:{
-    AllTours
+    AllTours,TourDetail
   },
   data(){
     return{
-      activeTab:'allTours'
+      activeTab:'allTours',
+      selectedTourId:null
     };
   },
    methods: {
     setActiveTab(tab) {
       this.activeTab = tab;
     },
+    handleViewTour(tourId) {
+      this.selectedTourId = tourId;
+      this.activeTab = 'tourDetail';
+    }
      
   }
 };
