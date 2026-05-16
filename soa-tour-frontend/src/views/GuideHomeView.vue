@@ -43,11 +43,10 @@
         <p>Read our latest travel blogs...</p>
       </div>
       
-      <div v-else-if="activeTab === 'myTours'" class="content-panel">
-        <h2>My Tours</h2>
-        <p>Your booked tours and itineraries...</p>
-      </div>
       
+      <MyTours v-else-if="activeTab === 'myTours'" @manage-keypoints="handleManageKeyPoints" />
+      <ManageKeyPoints v-else-if="activeTab === 'manageKeyPoints'" :tour-id="selectedTourId" @back="setActiveTab('myTours')" />
+            
       <div v-else-if="activeTab === 'profile'" class="content-panel">
         <h2>Profile</h2>
         <p>Your guide profile settings...</p>
@@ -59,10 +58,12 @@
 <script>
 import AllTours from './Guide/AllTours.vue';
 import TourDetail from './TourDetail.vue';
+import ManageKeyPoints from './Guide/ManageKeyPoints.vue';
+import MyTours from './Guide/MyTours.vue';
 export default {
-  name: "TourGuideSideBar",
+ 
   components:{
-    AllTours,TourDetail
+    AllTours,TourDetail,ManageKeyPoints,MyTours
   },
   data(){
     return{
@@ -77,6 +78,10 @@ export default {
     handleViewTour(tourId) {
       this.selectedTourId = tourId;
       this.activeTab = 'tourDetail';
+    },
+    handleManageKeyPoints(tourId) {
+      this.selectedTourId = tourId;
+      this.activeTab = 'manageKeyPoints';
     }
      
   }
