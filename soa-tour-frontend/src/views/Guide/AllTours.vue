@@ -243,19 +243,8 @@ export default {
   padding: 60px 20px;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #2d6a4f;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 16px;
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+
 
 .retry-btn {
   background: #2d6a4f;
