@@ -19,6 +19,9 @@
           <button class="nav-btn" @click="setActiveTab('myTours')">
             <span class="btn-label">My Tours</span>
           </button>
+          <button class="nav-btn" @click="setActiveTab('createTour')">
+            <span class="btn-label">Create Tour</span>
+          </button>
           <button class="nav-btn" @click="setActiveTab('profile')">
             <span class="btn-label">Profile</span>
           </button>
@@ -46,6 +49,8 @@
       
       <MyTours v-else-if="activeTab === 'myTours'" @manage-keypoints="handleManageKeyPoints" />
       <ManageKeyPoints v-else-if="activeTab === 'manageKeyPoints'" :tour-id="selectedTourId" @back="setActiveTab('myTours')" />
+
+      <CreateTour v-else-if="activeTab === 'createTour'" @tour-created="onTourCreated" />
             
       <div v-else-if="activeTab === 'profile'" class="content-panel">
         <h2>Profile</h2>
@@ -60,15 +65,16 @@ import AllTours from './Guide/AllTours.vue';
 import TourDetail from './TourDetail.vue';
 import ManageKeyPoints from './Guide/ManageKeyPoints.vue';
 import MyTours from './Guide/MyTours.vue';
+import CreateTour from './Guide/CreateTour.vue';
 export default {
  
   components:{
-    AllTours,TourDetail,ManageKeyPoints,MyTours
+    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour
   },
   data(){
     return{
       activeTab:'allTours',
-      selectedTourId:null
+      selectedTourId:null,
     };
   },
    methods: {
@@ -82,7 +88,10 @@ export default {
     handleManageKeyPoints(tourId) {
       this.selectedTourId = tourId;
       this.activeTab = 'manageKeyPoints';
-    }
+    },
+     onTourCreated() {
+       this.setActiveTab('createTour');
+     }
      
   }
 };

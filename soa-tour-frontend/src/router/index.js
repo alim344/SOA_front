@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import GuideHomeView from '../views/GuideHomeView.vue' // <-- Promenjeno ime importa
+import GuideHomeView from '../views/GuideHomeView.vue'
+
 import TouristHomeView from '../views/TouristHomeView.vue'
 import Login from '../views/Login.vue'
+import CreateTour from "../views/Guide/CreateTour.vue";
 
 const routes = [
   {
@@ -17,7 +19,12 @@ const routes = [
   {
     path: '/guideView',
     name: 'GuideView',
-    component: GuideHomeView // Sada je ispravno mapirano
+    component: GuideHomeView
+  },
+  {
+    path: '/create-tour',
+    name: 'CreateTour',
+    component: CreateTour
   }
 ]
 
