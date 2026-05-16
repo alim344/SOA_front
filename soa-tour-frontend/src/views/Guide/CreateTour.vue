@@ -35,11 +35,11 @@
       <div class="form-group">
         <label class="form-label">Difficulty *</label>
         <select v-model="form.difficulty" class="form-select" :class="{ 'error': errors.difficulty }">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
+          <option value="1">Easy</option>
+          <option value="2">Moderate</option>
+          <option value="3">Hard</option>
+          <option value="4">Expert</option>
+          <option value="5">Extreme</option>
         </select>
         <span v-if="errors.difficulty" class="error-message">{{ errors.difficulty }}</span>
       </div>
