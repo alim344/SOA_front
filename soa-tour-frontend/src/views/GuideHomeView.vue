@@ -22,6 +22,9 @@
           <button class="nav-btn" @click="setActiveTab('createTour')">
             <span class="btn-label">Create Tour</span>
           </button>
+          <button class="nav-btn" @click="setActiveTab('drafts')">
+            <span class="btn-label">Drafts</span>
+          </button>
           <button class="nav-btn" @click="setActiveTab('profile')">
             <span class="btn-label">Profile</span>
           </button>
@@ -51,6 +54,18 @@
       <ManageKeyPoints v-else-if="activeTab === 'manageKeyPoints'" :tour-id="selectedTourId" @back="setActiveTab('myTours')" />
 
       <CreateTour v-else-if="activeTab === 'createTour'" @tour-created="onTourCreated" />
+
+      <DraftTours
+          v-else-if="activeTab === 'drafts'"
+          @edit-draft="handleEditDraft"
+          @create-tour="setActiveTab('createTour')"
+      />
+
+      <DraftTourDetail
+          v-else-if="activeTab === 'draftDetail'"
+          :tour-id="selectedTourId"
+          @back="setActiveTab('drafts')"
+      />
             
       <div v-else-if="activeTab === 'profile'" class="content-panel">
         <h2>Profile</h2>
@@ -66,10 +81,12 @@ import TourDetail from './TourDetail.vue';
 import ManageKeyPoints from './Guide/ManageKeyPoints.vue';
 import MyTours from './Guide/MyTours.vue';
 import CreateTour from './Guide/CreateTour.vue';
+import DraftTours from "./Guide/DraftTours.vue";
+import DraftTourDetail from "./Guide/DraftTourDetail.vue";
 export default {
  
   components:{
-    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour
+    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour,DraftTours,DraftTourDetail
   },
   data(){
     return{
@@ -91,6 +108,10 @@ export default {
     },
      onTourCreated() {
        this.setActiveTab('createTour');
+     },
+     handleEditDraft(tourId) {
+       this.selectedTourId = tourId;
+       this.activeTab = 'draftDetail';
      }
      
   }
