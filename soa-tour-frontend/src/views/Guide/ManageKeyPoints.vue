@@ -97,6 +97,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+const token = localStorage.getItem('token');
+        
+
 export default {
   name: 'ManageKeyPoints',
   props: {
@@ -125,8 +128,19 @@ export default {
   methods: {
     async fetchKeyPoints() {
       this.loading = true;
+      
+      if (!token) {
+          this.errorMessage = 'You must be logged in to see ur keypoitns';
+          return;
+        }
+
       try {
-        const res = await axios.get(`http://localhost:8080/keypoint/getDtosByTour/${this.tourId}`);
+        const res = await axios.get(`http://localhost:8000/keypoint/getDtosByTour/${this.tourId}`,{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         this.keyPoints = res.data;
       } catch (err) {
         console.error(err);
@@ -213,8 +227,17 @@ export default {
 
     async submitAdd() {
       if (!this.form.latitude) return;
+      if (!token) {
+          this.errorMessage = 'You must be logged in to add ur keypoints';
+          return;
+        }
       try {
-        await axios.post(`http://localhost:8080/keypoint/add/${this.tourId}`, this.form);
+        await axios.post(`http://localhost:8000/keypoint/add/${this.tourId}`, this.form,{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         await this.fetchKeyPoints();
         this.cancelForm();
         this.renderMarkers();
@@ -224,8 +247,17 @@ export default {
     },
 
     async submitEdit() {
+      if (!token) {
+          this.errorMessage = 'You must be logged in to update ur keypoints';
+          return;
+        }
       try {
-        await axios.put('http://localhost:8080/keypoint/update', this.form);
+        await axios.put('http://localhost:8000/keypoint/update', this.form,{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         await this.fetchKeyPoints();
         this.cancelForm();
         this.renderMarkers();
@@ -236,8 +268,17 @@ export default {
 
     async deletePoint(id) {
       if (!confirm('Delete this key point?')) return;
+      if (!token) {
+          this.errorMessage = 'You must be logged in to delete ur keypoints';
+          return;
+        }
       try {
-        await axios.delete(`http://localhost:8080/keypoint/delete/${id}`);
+        await axios.delete(`http://localhost:8000/keypoint/delete/${id}`,{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         await this.fetchKeyPoints();
         this.renderMarkers();
       } catch (err) {

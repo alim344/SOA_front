@@ -40,7 +40,8 @@
 <script>
 import axios from 'axios';
 
-const AUTHOR_ID = 1;  //HARDKODOVANO DOK GATEWAZ NE NAMESTIMO
+//const AUTHOR_ID = 1;  //HARDKODOVANO DOK GATEWAZ NE NAMESTIMO
+
 
 export default {
   name: 'MyTours',
@@ -59,8 +60,22 @@ export default {
     async fetchTours() {
       this.loading = true;
       this.error = null;
+
+      
+        const token = localStorage.getItem('token');
+         const authorId = localStorage.getItem('userId');
+        if (!token) {
+          this.errorMessage = 'You must be logged in to see ur tours';
+          return;
+        }
+
       try {
-        const response = await axios.get(`http://localhost:8080/tour/author/${AUTHOR_ID}`);
+        const response = await axios.get(`http://localhost:8000/tour/nodraft/guide/${authorId}`,{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         this.tours = response.data;
       } catch (err) {
         this.error = 'Failed to load your tours.';

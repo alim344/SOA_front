@@ -90,10 +90,20 @@ export default {
     async loadData() {
       this.loading = true;
       this.error = null;
+      const token = localStorage.getItem('token');
+        if (!token) {
+          this.errorMessage = 'You must be logged in to see ur tours';
+          return;
+        }
       try {
         const [toursRes, pointsRes] = await Promise.all([
-          axios.get('http://localhost:8080/tour/getAllDtos'),
-          axios.get(`http://localhost:8080/keypoint/getDtosByTour/${this.tourId}`)
+          axios.get('http://localhost:8000/tour/getAllDtos'),
+          axios.get(`http://localhost:8000/keypoint/getDtosByTour/${this.tourId}`,{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
         ]);
 
         this.tour = toursRes.data.find(t => t.id === this.tourId);
