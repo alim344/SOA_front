@@ -13,7 +13,7 @@
     </div>
 
     <div v-else class="tour-detail">
-
+      
       <div class="tour-header">
         <h1 class="tour-name">{{ tour.name }}</h1>
         <span class="status-badge" :class="getStatusClass(tour.status)">
@@ -46,31 +46,42 @@
       <div class="tour-section">
         <div class="section-header">
           <h3 class="section-title">Key Points</h3>
-          <button @click="showAddKeyPoint = true" class="add-keypoint-btn" v-if="tour.status === 'DRAFT'">
+          <button @click="startAdding" class="add-keypoint-btn" v-if="tour.status === 'DRAFT'">
             + Add Key Point
           </button>
         </div>
 
-        <div v-if="showAddKeyPoint" class="add-keypoint-form">
+        <!-- Add Key Point Form with Map -->
+        <div v-if="isAdding" class="add-keypoint-form">
           <h4>Add New Key Point</h4>
+
+          <!-- Map -->
+          <div class="map-section">
+            <p class="map-hint">Click on the map to set the position</p>
+            <div id="point-map" class="map-container"></div>
+          </div>
+
           <div class="form-row">
             <input v-model="newKeyPoint.name" placeholder="Name" class="form-input" />
             <input v-model="newKeyPoint.description" placeholder="Description" class="form-input" />
           </div>
           <div class="form-row">
-            <input v-model.number="newKeyPoint.latitude" type="number" step="any" placeholder="Latitude" class="form-input" />
-            <input v-model.number="newKeyPoint.longitude" type="number" step="any" placeholder="Longitude" class="form-input" />
-          </div>
-          <div class="form-row">
             <input v-model="newKeyPoint.imagePath" placeholder="Image URL (optional)" class="form-input" />
           </div>
+          <div class="coord-display">
+            Coordinates: {{ newKeyPoint.latitude ? newKeyPoint.latitude.toFixed(5) : '—' }},
+            {{ newKeyPoint.longitude ? newKeyPoint.longitude.toFixed(5) : '—' }}
+          </div>
           <div class="form-actions">
-            <button @click="showAddKeyPoint = false" class="cancel-btn">Cancel</button>
-            <button @click="addKeyPoint" class="submit-btn" :disabled="adding">Add</button>
+            <button @click="cancelAdd" class="cancel-btn">Cancel</button>
+            <button @click="addKeyPoint" class="submit-btn" :disabled="!newKeyPoint.latitude || adding">
+              {{ adding ? 'Adding...' : 'Add' }}
+            </button>
           </div>
         </div>
 
-        <div v-if="keyPoints.length === 0 && !showAddKeyPoint" class="empty-keypoints">
+        <!-- Key Points List -->
+        <div v-if="keyPoints.length === 0 && !isAdding" class="empty-keypoints">
           <p>No key points yet. Add your first key point!</p>
         </div>
 
@@ -82,7 +93,7 @@
             </div>
             <p class="keypoint-description">{{ point.description || 'No description' }}</p>
             <div class="keypoint-coords">
-              {{ point.latitude }}, {{ point.longitude }}
+              {{ point.latitude.toFixed(5) }}, {{ point.longitude.toFixed(5) }}
             </div>
             <img v-if="point.imagePath" :src="point.imagePath" class="keypoint-image" />
           </div>
@@ -100,6 +111,20 @@
 
 <script>
 import axios from 'axios';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet icons
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
 
 export default {
   name: 'DraftTourDetail',
@@ -115,20 +140,28 @@ export default {
       keyPoints: [],
       loading: true,
       error: null,
-      showAddKeyPoint: false,
+      isAdding: false,
       adding: false,
       newKeyPoint: {
         name: '',
         description: '',
-        latitude: 0,
-        longitude: 0,
+        latitude: null,
+        longitude: null,
         imagePath: ''
-      }
+      },
+      map: null,
+      tempMarker: null
     };
   },
   mounted() {
     this.fetchTour();
     this.fetchKeyPoints();
+  },
+  beforeUnmount() {
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
   },
   methods: {
     async fetchTour() {
@@ -153,14 +186,103 @@ export default {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         this.keyPoints = response.data;
+
+        this.$nextTick(() => {
+          if (this.isAdding && !this.map) {
+            this.initMap();
+          } else if (this.map) {
+            this.renderMarkersOnMap();
+          }
+        });
       } catch (err) {
         console.error('Error fetching key points:', err);
       }
     },
 
+    initMap() {
+      if (this.map) {
+        this.map.remove();
+        this.map = null;
+      }
+
+      setTimeout(() => {
+        const mapContainer = document.getElementById('point-map');
+        if (!mapContainer) return;
+
+        this.map = L.map('point-map', { scrollWheelZoom: false });
+
+        mapContainer.addEventListener('mouseenter', () => this.map.scrollWheelZoom.enable());
+        mapContainer.addEventListener('mouseleave', () => this.map.scrollWheelZoom.disable());
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map);
+
+        if (this.keyPoints.length > 0) {
+          this.map.setView([this.keyPoints[0].latitude, this.keyPoints[0].longitude], 13);
+        } else {
+          this.map.setView([45.267136, 19.833549], 13);
+        }
+
+        this.map.on('click', (e) => {
+          if (!this.isAdding) return;
+          const { lat, lng } = e.latlng;
+          this.newKeyPoint.latitude = lat;
+          this.newKeyPoint.longitude = lng;
+
+          if (this.tempMarker) this.map.removeLayer(this.tempMarker);
+          this.tempMarker = L.marker([lat, lng], {
+            icon: L.divIcon({ className: 'temp-marker', html: '📍', iconSize: [30, 30] })
+          }).addTo(this.map);
+        });
+
+        this.renderMarkersOnMap();
+      }, 100);
+    },
+
+    renderMarkersOnMap() {
+      if (!this.map) return;
+
+      // Clear existing markers
+      this.map.eachLayer((layer) => {
+        if (layer instanceof L.Marker && !(layer.options.icon instanceof L.Icon.Default)) {
+          this.map.removeLayer(layer);
+        }
+      });
+
+      // Add markers for existing key points
+      this.keyPoints.forEach((point) => {
+        L.marker([point.latitude, point.longitude])
+            .addTo(this.map)
+            .bindPopup(`<b>${point.name}</b><br>${point.description}`);
+      });
+
+      // Draw polyline
+      if (this.keyPoints.length > 1) {
+        const latlngs = this.keyPoints.map(p => [p.latitude, p.longitude]);
+        L.polyline(latlngs, { color: '#2d6a4f', weight: 3, dashArray: '6, 8' }).addTo(this.map);
+      }
+    },
+
+    startAdding() {
+      this.isAdding = true;
+      this.newKeyPoint = { name: '', description: '', latitude: null, longitude: null, imagePath: '' };
+      this.$nextTick(() => {
+        this.initMap();
+      });
+    },
+
+    cancelAdd() {
+      this.isAdding = false;
+      if (this.tempMarker) {
+        this.map.removeLayer(this.tempMarker);
+        this.tempMarker = null;
+      }
+    },
+
     async addKeyPoint() {
-      if (!this.newKeyPoint.name || !this.newKeyPoint.latitude || !this.newKeyPoint.longitude) {
-        alert('Please fill name, latitude and longitude');
+      if (!this.newKeyPoint.name || !this.newKeyPoint.latitude) {
+        alert('Please fill name and click on map to select position');
         return;
       }
 
@@ -171,13 +293,15 @@ export default {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        this.newKeyPoint = { name: '', description: '', latitude: 0, longitude: 0, imagePath: '' };
-        this.showAddKeyPoint = false;
-
+        this.isAdding = false;
+        this.adding = false;
+        if (this.tempMarker) {
+          this.map.removeLayer(this.tempMarker);
+          this.tempMarker = null;
+        }
         await this.fetchKeyPoints();
       } catch (err) {
         alert('Failed to add key point');
-      } finally {
         this.adding = false;
       }
     },
@@ -237,6 +361,7 @@ export default {
 </script>
 
 <style scoped>
+
 .tour-detail-container {
   background: #f8fafc;
   border-radius: 24px;
@@ -393,6 +518,27 @@ export default {
   display: inline-block;
 }
 
+.map-section {
+  margin-bottom: 20px;
+}
+
+.map-hint {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.map-container {
+  height: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
 .add-keypoint-form {
   background: white;
   padding: 20px;
@@ -421,11 +567,19 @@ export default {
   font-size: 14px;
 }
 
+.coord-display {
+  background: #f1f5f9;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 16px;
+}
+
 .form-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 16px;
 }
 
 .cancel-btn, .submit-btn {
@@ -444,6 +598,11 @@ export default {
 .submit-btn {
   background: #2d6a4f;
   color: white;
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .keypoints-grid {
