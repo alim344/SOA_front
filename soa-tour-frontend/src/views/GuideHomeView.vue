@@ -25,6 +25,9 @@
           <button class="nav-btn" @click="setActiveTab('drafts')">
             <span class="btn-label">Drafts</span>
           </button>
+          <button class="nav-btn" @click="setActiveTab('review')">
+            <span class="btn-label">Review</span>
+          </button>
           <button class="nav-btn" @click="setActiveTab('profile')">
             <span class="btn-label">Profile</span>
           </button>
@@ -66,6 +69,8 @@
           :tour-id="selectedTourId"
           @back="setActiveTab('drafts')"
       />
+
+      <Review v-else-if="activeTab === 'review'" />
             
       <div v-else-if="activeTab === 'profile'" class="content-panel">
         <h2>Profile</h2>
@@ -83,10 +88,11 @@ import MyTours from './Guide/MyTours.vue';
 import CreateTour from './Guide/CreateTour.vue';
 import DraftTours from "./Guide/DraftTours.vue";
 import DraftTourDetail from "./Guide/DraftTourDetail.vue";
+import Review from "./Guide/Review.vue";
 export default {
  
   components:{
-    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour,DraftTours,DraftTourDetail
+    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour,DraftTours,DraftTourDetail,Review
   },
   data(){
     return{
