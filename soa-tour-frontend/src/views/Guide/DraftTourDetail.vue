@@ -43,11 +43,43 @@
         </div>
       </div>
 
-      <div class="tour-section" v-if="tour.keyPoints && tour.keyPoints.length">
-        <h3 class="section-title">Key Points</h3>
-        <div class="keypoints-grid">
-          <div v-for="point in tour.keyPoints" :key="point.id" class="keypoint-card">
-            <h4 class="keypoint-name">{{ point.name }}</h4>
+      <div class="tour-section">
+        <div class="section-header">
+          <h3 class="section-title">Key Points</h3>
+          <button @click="showAddKeyPoint = true" class="add-keypoint-btn" v-if="tour.status === 'DRAFT'">
+            + Add Key Point
+          </button>
+        </div>
+
+        <div v-if="showAddKeyPoint" class="add-keypoint-form">
+          <h4>Add New Key Point</h4>
+          <div class="form-row">
+            <input v-model="newKeyPoint.name" placeholder="Name" class="form-input" />
+            <input v-model="newKeyPoint.description" placeholder="Description" class="form-input" />
+          </div>
+          <div class="form-row">
+            <input v-model.number="newKeyPoint.latitude" type="number" step="any" placeholder="Latitude" class="form-input" />
+            <input v-model.number="newKeyPoint.longitude" type="number" step="any" placeholder="Longitude" class="form-input" />
+          </div>
+          <div class="form-row">
+            <input v-model="newKeyPoint.imagePath" placeholder="Image URL (optional)" class="form-input" />
+          </div>
+          <div class="form-actions">
+            <button @click="showAddKeyPoint = false" class="cancel-btn">Cancel</button>
+            <button @click="addKeyPoint" class="submit-btn" :disabled="adding">Add</button>
+          </div>
+        </div>
+
+        <div v-if="keyPoints.length === 0 && !showAddKeyPoint" class="empty-keypoints">
+          <p>No key points yet. Add your first key point!</p>
+        </div>
+
+        <div v-else class="keypoints-grid">
+          <div v-for="point in keyPoints" :key="point.id" class="keypoint-card">
+            <div class="keypoint-header">
+              <h4 class="keypoint-name">{{ point.name }}</h4>
+              <button @click="deleteKeyPoint(point.id)" class="delete-point-btn" title="Delete">✖</button>
+            </div>
             <p class="keypoint-description">{{ point.description || 'No description' }}</p>
             <div class="keypoint-coords">
               {{ point.latitude }}, {{ point.longitude }}
@@ -80,17 +112,27 @@ export default {
   data() {
     return {
       tour: null,
+      keyPoints: [],
       loading: true,
-      error: null
+      error: null,
+      showAddKeyPoint: false,
+      adding: false,
+      newKeyPoint: {
+        name: '',
+        description: '',
+        latitude: 0,
+        longitude: 0,
+        imagePath: ''
+      }
     };
   },
   mounted() {
     this.fetchTour();
+    this.fetchKeyPoints();
   },
   methods: {
     async fetchTour() {
       this.loading = true;
-      this.error = null;
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(`http://localhost:8000/tour/${this.tourId}`, {
@@ -98,28 +140,76 @@ export default {
         });
         this.tour = response.data;
       } catch (err) {
-        this.error = 'Failed to load tour. Please try again.';
-        console.error('Error fetching tour:', err);
+        this.error = 'Failed to load tour';
       } finally {
         this.loading = false;
       }
     },
 
-    editTour() {
-      this.$emit('edit-tour', this.tourId);
+    async fetchKeyPoints() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`http://localhost:8000/keypoint/getDtosByTour/${this.tourId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        this.keyPoints = response.data;
+      } catch (err) {
+        console.error('Error fetching key points:', err);
+      }
+    },
+
+    async addKeyPoint() {
+      if (!this.newKeyPoint.name || !this.newKeyPoint.latitude || !this.newKeyPoint.longitude) {
+        alert('Please fill name, latitude and longitude');
+        return;
+      }
+
+      this.adding = true;
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`http://localhost:8000/keypoint/add/${this.tourId}`, this.newKeyPoint, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        this.newKeyPoint = { name: '', description: '', latitude: 0, longitude: 0, imagePath: '' };
+        this.showAddKeyPoint = false;
+
+        await this.fetchKeyPoints();
+      } catch (err) {
+        alert('Failed to add key point');
+      } finally {
+        this.adding = false;
+      }
+    },
+
+    async deleteKeyPoint(pointId) {
+      if (confirm('Delete this key point?')) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.delete(`http://localhost:8000/keypoint/delete/${pointId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          await this.fetchKeyPoints();
+        } catch (err) {
+          alert('Failed to delete key point');
+        }
+      }
     },
 
     async publishTour() {
+      if (this.keyPoints.length < 2) {
+        alert('Tour must have at least 2 key points to publish');
+        return;
+      }
       try {
         const token = localStorage.getItem('token');
         await axios.put(`http://localhost:8000/tour/${this.tourId}/publish`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
         await this.fetchTour();
-        this.$emit('tour-published');
+        alert('Tour published successfully!');
       } catch (err) {
-        alert('Tour must have at least 2 key points to publish');
+        alert('Failed to publish tour');
       }
     },
 
@@ -164,10 +254,8 @@ export default {
   margin-bottom: 24px;
   padding: 8px 0;
   display: flex;
-;
   align-items: center;
   gap: 6px;
-  transition: color 0.2s;
 }
 
 .back-btn:hover {
@@ -202,20 +290,37 @@ export default {
   color: #92400e;
 }
 
-.status-badge.status-published {
-  background: #d1fae5;
-  color: #065f46;
-}
-
 .tour-section {
   margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
 .section-title {
   font-size: 20px;
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 16px;
+  margin: 0;
+}
+
+.add-keypoint-btn {
+  background: #e2e8f0;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.add-keypoint-btn:hover {
+  background: #cbd5e1;
 }
 
 .tour-description {
@@ -288,6 +393,59 @@ export default {
   display: inline-block;
 }
 
+.add-keypoint-form {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.add-keypoint-form h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.cancel-btn, .submit-btn {
+  padding: 8px 20px;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.cancel-btn {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.submit-btn {
+  background: #2d6a4f;
+  color: white;
+}
+
 .keypoints-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -299,13 +457,35 @@ export default {
   padding: 16px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.keypoint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .keypoint-name {
   font-size: 16px;
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 8px 0;
+  margin: 0;
+}
+
+.delete-point-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 20px;
+}
+
+.delete-point-btn:hover {
+  background: #fee2e2;
 }
 
 .keypoint-description {
@@ -328,14 +508,14 @@ export default {
   border-radius: 12px;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 16px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid #e2e8f0;
+.empty-keypoints {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
 }
-
 
 .publish-wrapper {
   display: flex;
