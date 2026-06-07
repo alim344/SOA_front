@@ -51,11 +51,7 @@
         <p>My travel blogs...</p>
       </div>
       
-
-      <div v-else-if="activeTab === 'profile'" class="content-panel">
-        <h2>Profile</h2>
-        <p>Your guide profile settings...</p>
-      </div>
+      <ProfileTourist v-else-if="activeTab === 'profile'" />
 
       <PositionSimulator v-else-if="activeTab === 'simulator'" />
   </main>
@@ -66,11 +62,14 @@
 import AllTours from './Guide/AllTours.vue';
 import TourDetail from './TourDetail.vue';
 import PositionSimulator from './Tourist/PositionSimulator.vue';
+import ProfileTourist from "./Tourist/ProfileTourist.vue";
+import Profile from "./Guide/Profile.vue";
 
 export default {
  
   components:{
-    AllTours,TourDetail,PositionSimulator
+    Profile,
+    AllTours,TourDetail,PositionSimulator, ProfileTourist
   },
   data(){
     return{
