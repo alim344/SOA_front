@@ -89,6 +89,8 @@ import CreateTour from './Guide/CreateTour.vue';
 import DraftTours from "./Guide/DraftTours.vue";
 import DraftTourDetail from "./Guide/DraftTourDetail.vue";
 import Review from "./Guide/Review.vue";
+import AllBlogs from './AllBlogs.vue'
+import MyBlogs from './MyBlogs.vue'
 export default {
  
   components:{

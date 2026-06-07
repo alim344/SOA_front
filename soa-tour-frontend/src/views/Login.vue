@@ -60,6 +60,7 @@ export default {
     });
     
     localStorage.setItem('userId', userResponse.data.id);
+    localStorage.setItem('userEmail', userResponse.data.email);
 
     if (auth.role === 'ROLE_GUIDE') {
       this.$router.push('/guideView');
