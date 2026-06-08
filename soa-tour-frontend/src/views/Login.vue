@@ -24,6 +24,10 @@
 
         <button class="login-btn" @click="loginUser">Sign In</button>
 
+        <p class="register-link">
+          Don't have an account? <router-link to="/register">Create one</router-link>
+        </p>
+
        
       </div>
     </div>
