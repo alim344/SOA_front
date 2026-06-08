@@ -40,16 +40,16 @@
      <AllTours v-if="activeTab === 'allTours'" @view-tour="handleViewTour" />
     <TourDetail v-else-if="activeTab === 'tourDetail'" :tour-id="selectedTourId" @back="setActiveTab('allTours')" />
 
-      <div v-else-if="activeTab === 'allBlogs'" class="content-panel">
+      <AllBlogs  v-else-if="activeTab === 'allBlogs'" class="content-panel">
         <h2>All Blogs</h2>
         <p>Read our latest travel blogs...</p>
-      </div>
+      </AllBlogs >
       
       
-      <div v-else-if="activeTab === 'myBlogs'" class="content-panel">
+      <MyBlogs v-else-if="activeTab === 'myBlogs'" class="content-panel">
         <h2>My Blogs</h2>
         <p>My travel blogs...</p>
-      </div>
+      </MyBlogs>
       
       <ProfileTourist v-else-if="activeTab === 'profile'" />
 
@@ -62,14 +62,16 @@
 import AllTours from './Guide/AllTours.vue';
 import TourDetail from './TourDetail.vue';
 import PositionSimulator from './Tourist/PositionSimulator.vue';
+import AllBlogs from './AllBlogs.vue'
+import MyBlogs from './MyBlogs.vue'
 import ProfileTourist from "./Tourist/ProfileTourist.vue";
 import Profile from "./Guide/Profile.vue";
 
 export default {
  
   components:{
-    Profile,
-    AllTours,TourDetail,PositionSimulator, ProfileTourist
+    AllTours,TourDetail,PositionSimulator, AllBlogs, MyBlogs,
+    Profile, ProfileTourist
   },
   data(){
     return{
