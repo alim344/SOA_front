@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="e5283c1d-13bd-424f-8769-6f8f3fadf88d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/soa-tour-frontend/src/views/Guide/DraftTourDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/soa-tour-frontend/src/views/Guide/DraftTourDetail.vue" afterDir="false" />
-    </list>
+    <list default="true" id="e5283c1d-13bd-424f-8769-6f8f3fadf88d" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -34,6 +32,19 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="SOA_front" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="SOA_front" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="e5283c1d-13bd-424f-8769-6f8f3fadf88d" name="Changes" comment="" />
@@ -43,6 +54,7 @@
       <updated>1779228970790</updated>
       <workItem from="1779228971919" duration="605000" />
       <workItem from="1779230136356" duration="30000" />
+      <workItem from="1780933242899" duration="135000" />
     </task>
     <servers />
   </component>

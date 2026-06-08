@@ -37,6 +37,10 @@
           <span class="meta-label">Price</span>
           <span class="price">${{ formatPrice(tour.price) }}</span>
         </div>
+        <div class="meta-card" v-if="tour.totalDistance > 0">
+          <span class="meta-label">Distance</span>
+          <span class="distance">{{ tour.totalDistance.toFixed(2) }} km</span>
+        </div>
         <div class="meta-card" v-if="tour.tags">
           <span class="meta-label">Tags</span>
           <span class="tags">{{ tour.tags }}</span>
@@ -246,7 +250,6 @@ export default {
         }
       });
 
-      // Add markers for existing key points
       this.keyPoints.forEach((point) => {
         L.marker([point.latitude, point.longitude])
             .addTo(this.map)
@@ -703,6 +706,12 @@ export default {
 .loading-state, .error-state {
   text-align: center;
   padding: 60px 20px;
+}
+
+.distance {
+  font-weight: 700;
+  color: #2d6a4f;
+  font-size: 16px;
 }
 
 .retry-btn {
