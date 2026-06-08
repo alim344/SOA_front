@@ -6,6 +6,7 @@ import Login from '../views/Login.vue'
 import CreateTour from "../views/Guide/CreateTour.vue";
 import DraftTours from "../views/Guide/DraftTours.vue";
 import Review from "../views/Guide/Review.vue";
+import RegisterView from '../views/RegisterView.vue';
 
 const routes = [
   {
@@ -37,7 +38,9 @@ const routes = [
     path: '/review',
     name: 'Review',
     component: Review
-  }
+  },
+  { path: '/register', 
+    component: RegisterView }
 ]
 
 const router = createRouter({

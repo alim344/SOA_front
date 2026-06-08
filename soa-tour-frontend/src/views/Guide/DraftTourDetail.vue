@@ -51,11 +51,9 @@
           </button>
         </div>
 
-        <!-- Add Key Point Form with Map -->
         <div v-if="isAdding" class="add-keypoint-form">
           <h4>Add New Key Point</h4>
 
-          <!-- Map -->
           <div class="map-section">
             <p class="map-hint">Click on the map to set the position</p>
             <div id="point-map" class="map-container"></div>
@@ -80,7 +78,6 @@
           </div>
         </div>
 
-        <!-- Key Points List -->
         <div v-if="keyPoints.length === 0 && !isAdding" class="empty-keypoints">
           <p>No key points yet. Add your first key point!</p>
         </div>
@@ -114,7 +111,6 @@ import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet icons
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';

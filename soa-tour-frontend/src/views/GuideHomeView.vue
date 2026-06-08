@@ -71,7 +71,8 @@
       />
 
       <Review v-else-if="activeTab === 'review'" />
-            
+
+      <Profile v-else-if="activeTab === 'profile'" />
       <div v-else-if="activeTab === 'profile'" class="content-panel">
         <h2>Profile</h2>
         <p>Your guide profile settings...</p>
@@ -91,10 +92,11 @@ import DraftTourDetail from "./Guide/DraftTourDetail.vue";
 import Review from "./Guide/Review.vue";
 import AllBlogs from './AllBlogs.vue'
 import MyBlogs from './MyBlogs.vue'
+import Profile from './Guide/Profile.vue';
 export default {
  
   components:{
-    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour,DraftTours,DraftTourDetail,Review
+    AllTours,TourDetail,ManageKeyPoints,MyTours,CreateTour,DraftTours,DraftTourDetail,Review, Profile
   },
   data(){
     return{
