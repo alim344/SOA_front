@@ -13,7 +13,7 @@
     </div>
 
     <div v-else class="tour-detail">
-      
+
       <div class="tour-header">
         <h1 class="tour-name">{{ tour.name }}</h1>
         <span class="status-badge" :class="getStatusClass(tour.status)">
@@ -44,6 +44,44 @@
         <div class="meta-card" v-if="tour.tags">
           <span class="meta-label">Tags</span>
           <span class="tags">{{ tour.tags }}</span>
+        </div>
+      </div>
+
+      <div class="tour-section">
+        <div class="section-header">
+          <h3 class="section-title">Transport Duration</h3>
+          <button @click="startAddingDuration" class="add-keypoint-btn" v-if="tour.status === 'DRAFT'">
+            + Add Duration
+          </button>
+        </div>
+
+        <div v-if="isAddingDuration" class="add-duration-form">
+          <div class="form-row">
+            <select v-model="newDuration.transportType" class="form-input">
+              <option value="WALKING">Walking</option>
+              <option value="BIKE">Bike</option>
+              <option value="CAR">Car</option>
+            </select>
+            <input type="number" v-model="newDuration.minutes" placeholder="Minutes" class="form-input" />
+          </div>
+          <div class="form-actions">
+            <button @click="cancelAddDuration" class="cancel-btn">Cancel</button>
+            <button @click="addDuration" class="submit-btn" :disabled="!newDuration.transportType || !newDuration.minutes">
+              Save
+            </button>
+          </div>
+        </div>
+
+        <div v-if="tour.durationByTransport && Object.keys(tour.durationByTransport).length > 0" class="duration-list">
+          <div v-for="(minutes, type) in tour.durationByTransport" :key="type" class="duration-item">
+            <span class="duration-type">
+              {{ getTransportName(type) }}
+            </span>
+            <span class="duration-minutes">{{ minutes }} min</span>
+          </div>
+        </div>
+        <div v-else-if="!isAddingDuration" class="empty-duration">
+          <p>No transport duration set yet. Add duration before publishing.</p>
         </div>
       </div>
 
@@ -150,7 +188,12 @@ export default {
         imagePath: ''
       },
       map: null,
-      tempMarker: null
+      tempMarker: null,
+      isAddingDuration: false,
+      newDuration: {
+        transportType: 'WALKING',
+        minutes: null
+      }
     };
   },
   mounted() {
@@ -243,7 +286,6 @@ export default {
     renderMarkersOnMap() {
       if (!this.map) return;
 
-      // Clear existing markers
       this.map.eachLayer((layer) => {
         if (layer instanceof L.Marker && !(layer.options.icon instanceof L.Icon.Default)) {
           this.map.removeLayer(layer);
@@ -256,7 +298,6 @@ export default {
             .bindPopup(`<b>${point.name}</b><br>${point.description}`);
       });
 
-      // Draw polyline
       if (this.keyPoints.length > 1) {
         const latlngs = this.keyPoints.map(p => [p.latitude, p.longitude]);
         L.polyline(latlngs, { color: '#2d6a4f', weight: 3, dashArray: '6, 8' }).addTo(this.map);
@@ -319,11 +360,53 @@ export default {
       }
     },
 
+    startAddingDuration() {
+      this.isAddingDuration = true;
+      this.newDuration = { transportType: 'WALKING', minutes: null };
+    },
+
+    cancelAddDuration() {
+      this.isAddingDuration = false;
+    },
+
+    async addDuration() {
+      if (!this.newDuration.minutes) {
+        alert('Please enter minutes');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`http://localhost:8000/tour/${this.tourId}/duration`, {
+          transportType: this.newDuration.transportType,
+          minutes: parseInt(this.newDuration.minutes)
+        }, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        this.isAddingDuration = false;
+        await this.fetchTour();
+      } catch (err) {
+        alert('Failed to add duration');
+      }
+    },
+
+    getTransportName(type) {
+      const names = { 'WALKING': 'Walking', 'BIKE': 'Bike', 'CAR': 'Car' };
+      return names[type] || type;
+    },
+
     async publishTour() {
       if (this.keyPoints.length < 2) {
         alert('Tour must have at least 2 key points to publish');
         return;
       }
+
+      if (!this.tour.durationByTransport || Object.keys(this.tour.durationByTransport).length === 0) {
+        alert('Please add at least one transport duration before publishing');
+        return;
+      }
+
       try {
         const token = localStorage.getItem('token');
         await axios.put(`http://localhost:8000/tour/${this.tourId}/publish`, {}, {
@@ -459,7 +542,7 @@ export default {
 
 .tour-meta-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -517,6 +600,59 @@ export default {
   display: inline-block;
 }
 
+.distance {
+  font-weight: 700;
+  color: #2d6a4f;
+  font-size: 16px;
+}
+
+/* Duration styles */
+.add-duration-form {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.duration-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.duration-item {
+  background: #f1f5f9;
+  padding: 8px 16px;
+  border-radius: 30px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.duration-type {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.duration-minutes {
+  color: #2d6a4f;
+  font-weight: 600;
+}
+
+.empty-duration {
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Map styles */
 .map-section {
   margin-bottom: 20px;
 }
@@ -706,12 +842,6 @@ export default {
 .loading-state, .error-state {
   text-align: center;
   padding: 60px 20px;
-}
-
-.distance {
-  font-weight: 700;
-  color: #2d6a4f;
-  font-size: 16px;
 }
 
 .retry-btn {
