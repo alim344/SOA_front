@@ -16,6 +16,16 @@
 
         <div class="blog-meta">
           <span class="author-chip">{{ blog.author_email }}</span>
+          <!-- Follow blog author -->
+          <button
+            v-if="blog.author_email !== currentEmail"
+            class="follow-btn"
+            :class="{ following: authorFollowing }"
+            :disabled="authorFollowLoading"
+            @click="toggleFollow(blog.author_email, 'author')"
+          >
+            {{ authorFollowLoading ? '…' : authorFollowing ? 'Following' : '+ Follow' }}
+          </button>
           <span class="date">{{ formatDate(blog.created_at) }}</span>
         </div>
 
@@ -41,8 +51,19 @@
           <div v-for="c in comments" :key="c.id" class="comment">
             <div class="comment-header">
               <span class="comment-author">{{ c.author_email }}</span>
+              <!-- Follow commenter -->
+              <button
+                v-if="c.author_email !== currentEmail"
+                class="follow-btn-sm"
+                :class="{ following: followingMap[c.author_email] }"
+                :disabled="followLoadingMap[c.author_email]"
+                @click="toggleFollow(c.author_email, 'comment')"
+              >
+                {{ followLoadingMap[c.author_email] ? '…' : followingMap[c.author_email] ? 'Following' : '+ Follow' }}
+              </button>
               <span class="comment-date">{{ formatDate(c.updated_at) }}</span>
             </div>
+
             <template v-if="editingCommentId === c.id">
               <textarea v-model="editingCommentText" class="comment-input" rows="2" />
               <div class="comment-edit-actions">
@@ -120,6 +141,12 @@ export default {
       showEditForm: false,
       showDeleteConfirm: false,
       deleteLoading: false,
+      // follow state for blog author
+      authorFollowing: false,
+      authorFollowLoading: false,
+      // follow state for commenters — keyed by email
+      followingMap: {},
+      followLoadingMap: {},
     }
   },
 
@@ -131,6 +158,9 @@ export default {
 
   mounted() {
     this.fetchComments()
+    if (this.blog.author_email && this.blog.author_email !== this.currentEmail) {
+      this.checkFollowing(this.blog.author_email, 'author')
+    }
   },
 
   methods: {
@@ -148,10 +178,68 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         })
         this.comments = response.data
+        // check follow status for each unique commenter
+        const emails = [...new Set(
+          this.comments
+            .map(c => c.author_email)
+            .filter(e => e && e !== this.currentEmail)
+        )]
+        emails.forEach(email => this.checkFollowing(email, 'comment'))
       } catch (err) {
         this.commentsError = err.response?.data?.detail || 'Failed to load comments'
       } finally {
         this.commentsLoading = false
+      }
+    },
+
+    async checkFollowing(email, type) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await axios.get(
+          `http://localhost:8000/follower/is-following/${this.currentEmail}/${email}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (type === 'author') {
+          this.authorFollowing = response.data
+        } else {
+          this.followingMap = { ...this.followingMap, [email]: response.data }
+        }
+      } catch {
+        // ignore
+      }
+    },
+
+    async toggleFollow(email, type) {
+      if (type === 'author') {
+        this.authorFollowLoading = true
+      } else {
+        this.followLoadingMap = { ...this.followLoadingMap, [email]: true }
+      }
+
+      try {
+        const token = localStorage.getItem('token')
+        const response = await axios.post(
+          'http://localhost:8000/follower/follow',
+          { followee_mail: email },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        const newState = response.data && typeof response.data.following === 'boolean'
+          ? response.data.following
+          : type === 'author' ? !this.authorFollowing : !this.followingMap[email]
+
+        if (type === 'author') {
+          this.authorFollowing = newState
+        } else {
+          this.followingMap = { ...this.followingMap, [email]: newState }
+        }
+      } catch (err) {
+        alert(err.response?.data || 'Failed to follow/unfollow')
+      } finally {
+        if (type === 'author') {
+          this.authorFollowLoading = false
+        } else {
+          this.followLoadingMap = { ...this.followLoadingMap, [email]: false }
+        }
       }
     },
 
@@ -317,7 +405,7 @@ export default {
 
 .gallery-img { flex: 1; object-fit: cover; min-width: 0; }
 
-.blog-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.blog-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 
 .author-chip {
   font-size: 0.78rem;
@@ -328,7 +416,7 @@ export default {
   border-radius: 20px;
 }
 
-.date { font-size: 0.78rem; color: #a0aec0; }
+.date { font-size: 0.78rem; color: #a0aec0; margin-left: auto; }
 
 .blog-title {
   font-family: 'Lora', serif;
@@ -367,6 +455,44 @@ export default {
 .like-btn:hover { background: #fff0f0; border-color: #ffb3b3; color: #e53e3e; }
 .heart { font-size: 1.1rem; }
 
+/* Follow buttons */
+.follow-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1.5px solid #2d6a4f;
+  background: transparent;
+  color: #2d6a4f;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.follow-btn:hover { background: #2d6a4f; color: #fff; }
+.follow-btn.following { background: #2d6a4f; color: #fff; }
+.follow-btn.following:hover { background: #e53e3e; border-color: #e53e3e; }
+.follow-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.follow-btn-sm {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1.5px solid #2d6a4f;
+  background: transparent;
+  color: #2d6a4f;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.follow-btn-sm:hover { background: #2d6a4f; color: #fff; }
+.follow-btn-sm.following { background: #2d6a4f; color: #fff; }
+.follow-btn-sm.following:hover { background: #e53e3e; border-color: #e53e3e; }
+.follow-btn-sm:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .divider { height: 1px; background: #f0f2f5; margin: 0 28px; }
 
 .comments-section { padding: 20px 28px 28px; }
@@ -397,10 +523,16 @@ export default {
 
 .comment { background: #f7f9fe; border-radius: 12px; padding: 12px 16px; }
 
-.comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
 
 .comment-author { font-size: 0.8rem; font-weight: 600; color: #2d6a4f; }
-.comment-date { font-size: 0.75rem; color: #a0aec0; }
+.comment-date { font-size: 0.75rem; color: #a0aec0; margin-left: auto; }
 .comment-text { font-size: 0.9rem; color: #4a5568; line-height: 1.5; }
 
 .comment-actions { display: flex; gap: 8px; margin-top: 8px; }
