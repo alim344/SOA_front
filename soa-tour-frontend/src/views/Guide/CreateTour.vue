@@ -139,17 +139,26 @@ export default {
 
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
-          this.errorMessage = 'You must be logged in to create a tour';
+        const userId = localStorage.getItem('userId');
+
+        if (!token || !userId) {
+          this.errorMessage = 'Please login again';
+          this.loading = false;
           return;
         }
 
-        const response = await axios.post('http://localhost:8000/tour', {
+        const requestData = {
           name: this.form.name,
           description: this.form.description,
           difficulty: parseInt(this.form.difficulty),
-          tags: this.form.tags
-        }, {
+          tags: this.form.tags,
+          status: "DRAFT",
+          price: 0.0,
+          authorId: parseInt(userId),
+          totalDistance: 0.0
+        };
+
+        const response = await axios.post('http://localhost:8000/tour', requestData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -158,31 +167,32 @@ export default {
 
         if (response.status === 200 || response.status === 201) {
           this.successMessage = 'Tour created successfully!';
-          // Reset form
-          this.form = {
-            name: '',
-            description: '',
-            difficulty: 2,
-            tags: []
-          };
-          this.tagsInput = '';
-          // Emit event to parent to refresh tours list
+          this.resetForm();
           setTimeout(() => {
             this.$emit('tour-created');
           }, 1500);
         }
       } catch (err) {
-        console.error('Error creating tour:', err);
-        if (err.response?.status === 401) {
-          this.errorMessage = 'Session expired. Please login again.';
-        } else if (err.response?.data?.message) {
-          this.errorMessage = err.response.data.message;
+        console.error('Error:', err);
+        if (err.response) {
+          console.log('Server error:', err.response.data);
+          this.errorMessage = err.response.data?.message || err.response.data?.error || 'Failed to create tour';
         } else {
-          this.errorMessage = 'Failed to create tour. Please try again.';
+          this.errorMessage = 'Network error';
         }
       } finally {
         this.loading = false;
       }
+    },
+
+    resetForm() {
+      this.form = {
+        name: '',
+        description: '',
+        difficulty: 2,
+        tags: []
+      };
+      this.tagsInput = '';
     },
 
     removeTag(tag) {

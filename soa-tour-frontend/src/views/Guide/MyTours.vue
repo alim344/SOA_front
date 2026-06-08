@@ -13,7 +13,19 @@
 
     <div v-else class="tours-grid">
       <div v-for="tour in tours" :key="tour.id" class="tour-card">
-        <h3 class="tour-name">{{ tour.name }}</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 class="tour-name" style="margin: 0;">{{ tour.name }}</h3>
+          <span :style="{
+            fontSize: '11px',
+            padding: '2px 8px',
+            borderRadius: '20px',
+            fontWeight: '600',
+            background: tour.status === 'DRAFT' ? '#fef3c7' : (tour.status === 'PUBLISHED' ? '#d1fae5' : '#e2e8f0'),
+            color: tour.status === 'DRAFT' ? '#92400e' : (tour.status === 'PUBLISHED' ? '#065f46' : '#475569')
+          }">
+            {{ tour.status }}
+          </span>
+        </div>
         <p class="tour-description">{{ truncateText(tour.description, 100) }}</p>
 
         <div class="tour-meta">
@@ -27,11 +39,29 @@
             <span class="meta-label">Price:</span>
             <span class="price">${{ tour.price?.toFixed(2) }}</span>
           </div>
+          <div class="meta-item" v-if="tour.totalDistance > 0">
+            <span class="meta-label">Distance:</span>
+            <span class="price">{{ tour.totalDistance.toFixed(2) }} km</span>
+          </div>
         </div>
 
-        <button @click="$emit('manage-keypoints', tour.id)" class="manage-btn">
-          Manage Key Points →
-        </button>
+        <div style="display: flex; gap: 10px; margin-top: auto;">
+          <button @click="$emit('manage-keypoints', tour.id)" class="manage-btn" style="flex: 1;">
+            Manage Key Points →
+          </button>
+
+          <button v-if="tour.status === 'PUBLISHED'"
+                  @click="archiveTour(tour.id)"
+                  style="flex: 0.5; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 40px; font-weight: 600; cursor: pointer;">
+            Archive
+          </button>
+
+          <button v-if="tour.status === 'ARCHIVED'"
+                  @click="reactivateTour(tour.id)"
+                  style="flex: 0.5; background: #d1fae5; color: #065f46; border: none; padding: 10px 20px; border-radius: 40px; font-weight: 600; cursor: pointer;">
+            Reactivate
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -39,9 +69,6 @@
 
 <script>
 import axios from 'axios';
-
-//const AUTHOR_ID = 1;  //HARDKODOVANO DOK GATEWAZ NE NAMESTIMO
-
 
 export default {
   name: 'MyTours',
@@ -61,16 +88,17 @@ export default {
       this.loading = true;
       this.error = null;
 
-      
-        const token = localStorage.getItem('token');
-         const authorId = localStorage.getItem('userId');
-        if (!token) {
-          this.errorMessage = 'You must be logged in to see ur tours';
-          return;
-        }
+      const token = localStorage.getItem('token');
+      const authorId = localStorage.getItem('userId');
+
+      if (!token) {
+        this.error = 'You must be logged in to see your tours';
+        this.loading = false;
+        return;
+      }
 
       try {
-        const response = await axios.get(`http://localhost:8000/tour/nodraft/guide/${authorId}`,{
+        const response = await axios.get(`http://localhost:8000/tour/nodraft/guide/${authorId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -84,6 +112,31 @@ export default {
         this.loading = false;
       }
     },
+
+    async archiveTour(tourId) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`http://localhost:8000/tour/${tourId}/archive`, {}, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        await this.fetchTours();
+      } catch (err) {
+        alert('Failed to archive tour');
+      }
+    },
+
+    async reactivateTour(tourId) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`http://localhost:8000/tour/${tourId}/reactivate`, {}, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        await this.fetchTours();
+      } catch (err) {
+        alert('Failed to reactivate tour');
+      }
+    },
+
     truncateText(text, maxLength) {
       if (!text) return 'No description available';
       if (text.length <= maxLength) return text;
@@ -140,7 +193,6 @@ export default {
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
-  margin: 0 0 8px 0;
 }
 .tour-description {
   font-size: 13px;
@@ -172,7 +224,6 @@ export default {
 .difficulty-level.hard { background: #fee2e2; color: #991b1b; }
 .price { font-weight: 700; color: #2d6a4f; font-size: 16px; }
 .manage-btn {
-  margin-top: auto;
   background: linear-gradient(135deg, #2d6a4f, #1b4d3e);
   color: white;
   border: none;
@@ -188,6 +239,13 @@ export default {
   box-shadow: 0 4px 12px rgba(45,106,79,0.3);
 }
 .loading-state, .error-state { text-align: center; padding: 60px 20px; }
-
-
+.retry-btn {
+  background: #2d6a4f;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 40px;
+  cursor: pointer;
+  margin-top: 16px;
+}
 </style>

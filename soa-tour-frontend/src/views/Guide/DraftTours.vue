@@ -77,7 +77,7 @@ export default {
             'Authorization': `Bearer ${token}`
           }
         });
-        // Filtriraj samo DRAFT ture
+
         this.drafts = response.data.filter(tour => tour.status === 'DRAFT');
       } catch (err) {
         this.error = 'Failed to load draft tours. Please try again.';
