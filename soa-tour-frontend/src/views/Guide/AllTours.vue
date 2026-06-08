@@ -63,7 +63,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await axios.get('http://localhost:8000/tour/getAllDtos');
+        const response = await axios.get('http://localhost:8000/tour/getAllActiveTours');
         this.tours = response.data;
       } catch (err) {
         this.error = 'Failed to load tours. Please try again.';
