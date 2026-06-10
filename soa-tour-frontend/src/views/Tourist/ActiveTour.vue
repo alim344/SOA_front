@@ -166,7 +166,7 @@ export default {
     },
     statusLabel() {
       if (!this.execution) return 'Not started';
-      return { ACTIVE: '🟢 Active', COMPLETED: '🏁 Completed', ABANDONED: '⛔ Abandoned' }[this.execution.status] ?? this.execution.status;
+      return { ACTIVE: ' Active', COMPLETED: ' Completed', ABANDONED: ' Abandoned' }[this.execution.status] ?? this.execution.status;
     },
     statusClass() {
       if (!this.execution) return 'status-idle';
@@ -188,13 +188,13 @@ export default {
       const token = localStorage.getItem('token');
       try {
         const [toursRes, kpRes] = await Promise.all([
-          axios.get(`${BASE}/tour/getAllDtos`),
+          axios.get(`${BASE}/tour/${this.tourId}`),
           axios.get(`${BASE}/keypoint/getDtosByTour/${this.tourId}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
-        this.tour = toursRes.data.find(t => t.id === this.tourId);
-        this.keyPoints = kpRes.data;
+      this.tour = tourRes.data;
+      this.keyPoints = kpRes.data;
       } catch (e) {
         this.error = 'Failed to load tour data.';
         console.error(e);
