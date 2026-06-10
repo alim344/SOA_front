@@ -25,6 +25,9 @@
           <button class="nav-btn" @click="setActiveTab('simulator')">
             <span class="btn-label">Simulator</span>
           </button>
+          <button class="nav-btn" @click="setActiveTab('activeTour')">
+            <span class="btn-label">Active Tour</span>
+          </button>
         
         </nav>
       </div>
@@ -54,6 +57,12 @@
       <ProfileTourist v-else-if="activeTab === 'profile'" />
 
       <PositionSimulator v-else-if="activeTab === 'simulator'" />
+      <ActiveTour
+        v-else-if="activeTab === 'activeTour'"
+        :tour-id="4"
+        :tourist-id="currentUserId"
+        @back="setActiveTab('allTours')"
+      />
   </main>
   </div>
 </template>
@@ -64,17 +73,19 @@ import TourDetail from './TourDetail.vue';
 import PositionSimulator from './Tourist/PositionSimulator.vue';
 import ProfileTourist from "./Tourist/ProfileTourist.vue";
 import Profile from "./Guide/Profile.vue";
+import ActiveTour from './Tourist/ActiveTour.vue';
 
 export default {
  
   components:{
     Profile,
-    AllTours,TourDetail,PositionSimulator, ProfileTourist
+    AllTours,TourDetail,PositionSimulator, ProfileTourist,ActiveTour
   },
   data(){
     return{
       activeTab:'allTours',
-      selectedTourId:null
+      selectedTourId:null,
+      currentUserId: Number(localStorage.getItem('userId'))
     };
   },
    methods: {
@@ -85,7 +96,9 @@ export default {
       this.selectedTourId = tourId;
       this.activeTab = 'tourDetail';
     },
-    
+     goBack() {                          
+      this.setActiveTab('allTours');
+    }
      
   }
 };
