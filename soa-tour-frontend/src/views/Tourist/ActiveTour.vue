@@ -61,7 +61,7 @@
               @click="startTour"
               :disabled="actionLoading"
             >
-              {{ actionLoading ? 'Starting…' : '▶ Start Tour' }}
+              {{ actionLoading ? 'Starting…' : ' Start Tour' }}
             </button>
             <button
               v-if="execution?.status === 'ACTIVE'"
@@ -69,7 +69,7 @@
               @click="abandonTour"
               :disabled="actionLoading"
             >
-              {{ actionLoading ? 'Abandoning…' : '✕ Abandon Tour' }}
+              {{ actionLoading ? 'Abandoning…' : ' Abandon Tour' }}
             </button>
           </div>
 
@@ -188,12 +188,14 @@ export default {
       const token = localStorage.getItem('token');
       try {
         const [toursRes, kpRes] = await Promise.all([
-          axios.get(`${BASE}/tour/${this.tourId}`),
+          axios.get(`${BASE}/tour/${this.tourId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
           axios.get(`${BASE}/keypoint/getDtosByTour/${this.tourId}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
-      this.tour = tourRes.data;
+      this.tour = toursRes.data;
       this.keyPoints = kpRes.data;
       } catch (e) {
         this.error = 'Failed to load tour data.';
