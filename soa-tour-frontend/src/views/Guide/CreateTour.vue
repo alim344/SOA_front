@@ -154,14 +154,15 @@ export default {
           tags: this.form.tags,
           status: "DRAFT",
           price: 0.0,
-          authorId: parseInt(userId),
+          author_id: parseInt(userId),
           totalDistance: 0.0
         };
 
         const response = await axios.post('http://localhost:8000/tour', requestData, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-User-ID': userId
           }
         });
 
