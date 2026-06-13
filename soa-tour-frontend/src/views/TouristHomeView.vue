@@ -8,7 +8,7 @@
           <div class="instructor-tag">Tourist</div>
         </div>
 
-        
+
         <nav class="nav-buttons">
           <button class="nav-btn" @click="setActiveTab('allTours')">
             <span class="btn-label">All Tours</span>
@@ -28,7 +28,10 @@
           <button class="nav-btn" @click="setActiveTab('activeTour')">
             <span class="btn-label">Active Tour</span>
           </button>
-        
+          <button class="nav-btn" @click="setActiveTab('reviewTours')">
+            <span class="btn-label">Review</span>
+          </button>
+
         </nav>
       </div>
 
@@ -40,20 +43,22 @@
     </aside>
 
     <main class="content-area">
-     <AllTours v-if="activeTab === 'allTours'" @view-tour="handleViewTour" />
-    <TourDetail v-else-if="activeTab === 'tourDetail'" :tour-id="selectedTourId" @back="setActiveTab('allTours')" />
+      <AllToursTourist v-if="activeTab === 'allTours'" @view-tour="handleViewTour" />
+
+      <!-- Tour Detail za turistu -->
+      <TouristTourDetail v-else-if="activeTab === 'tourDetail'" :tour-id="selectedTourId" @back="setActiveTab('allTours')" />
 
       <AllBlogs  v-else-if="activeTab === 'allBlogs'" class="content-panel">
         <h2>All Blogs</h2>
         <p>Read our latest travel blogs...</p>
       </AllBlogs >
-      
-      
+
+
       <MyBlogs v-else-if="activeTab === 'myBlogs'" class="content-panel">
         <h2>My Blogs</h2>
         <p>My travel blogs...</p>
       </MyBlogs>
-      
+
       <ProfileTourist v-else-if="activeTab === 'profile'" />
 
       <PositionSimulator v-else-if="activeTab === 'simulator'" />
@@ -63,12 +68,14 @@
         :tourist-id="currentUserId"
         @back="setActiveTab('allTours')"
       />
+      <ReviewTours v-else-if="activeTab === 'reviewTours'" />
   </main>
   </div>
 </template>
 
 <script>
-import AllTours from './Guide/AllTours.vue';
+import AllToursTourist  from './Tourist/AllToursTourist.vue';
+import TouristTourDetail from './Tourist/TouristTourDetail.vue'
 import TourDetail from './TourDetail.vue';
 import PositionSimulator from './Tourist/PositionSimulator.vue';
 import AllBlogs from './AllBlogs.vue'
@@ -76,13 +83,15 @@ import MyBlogs from './MyBlogs.vue'
 import ProfileTourist from "./Tourist/ProfileTourist.vue";
 import Profile from "./Guide/Profile.vue";
 import ActiveTour from './Tourist/ActiveTour.vue';
+import ReviewTours from "./Tourist/ReviewTours.vue";
+import ReviewForm from "./Tourist/ReviewForm.vue";
 
 export default {
- 
+
   components:{
 
-    AllTours,TourDetail,PositionSimulator, AllBlogs, MyBlogs,
-    Profile, ProfileTourist,ActiveTour
+    AllToursTourist, TouristTourDetail,TourDetail,PositionSimulator, AllBlogs, MyBlogs,
+    Profile, ProfileTourist,ActiveTour, ReviewTours, ReviewForm
   },
   data(){
     return{
@@ -99,10 +108,10 @@ export default {
       this.selectedTourId = tourId;
       this.activeTab = 'tourDetail';
     },
-     goBack() {                          
+     goBack() {
       this.setActiveTab('allTours');
     }
-     
+
   }
 };
 </script>
@@ -263,8 +272,8 @@ export default {
 }
 
 .content-area {
-  flex: 1;           
-  min-width: 0;      
+  flex: 1;
+  min-width: 0;
   padding: 20px 20px;
   background: #f7f9fe;
   overflow-y: auto;
