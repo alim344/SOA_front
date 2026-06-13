@@ -59,7 +59,7 @@
       <PositionSimulator v-else-if="activeTab === 'simulator'" />
       <ActiveTour
         v-else-if="activeTab === 'activeTour'"
-        :tour-id="4"
+        :tour-id="3"
         :tourist-id="currentUserId"
         @back="setActiveTab('allTours')"
       />
