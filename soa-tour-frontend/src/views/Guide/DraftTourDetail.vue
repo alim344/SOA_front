@@ -214,7 +214,14 @@ export default {
         const response = await axios.get(`http://localhost:8000/tour/${this.tourId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        this.tour = response.data;
+        const data = response.data;
+
+        this.tour = {
+          ...data,
+          durationByTransport: data.duration_by_transport || data.durationByTransport || {},
+          totalDistance: data.total_distance || data.totalDistance || 0,
+          authorId: data.author_id || data.authorId
+        };
       } catch (err) {
         this.error = 'Failed to load tour';
       } finally {
