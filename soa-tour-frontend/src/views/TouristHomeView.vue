@@ -24,11 +24,13 @@
           <button class="nav-btn" :class="{ active: activeTab === 'simulator' }" @click="setActiveTab('simulator')">
             <span class="btn-label">Simulator</span>
           </button>
-          <button class="nav-btn" :class="{ active: activeTab === 'activeTour' }" @click="setActiveTab('activeTour')">
-            <span class="btn-label">Active Tour</span>
-          </button>
+
           <button class="nav-btn" :class="{ active: activeTab === 'reviewTours' }" @click="setActiveTab('reviewTours')">
+
             <span class="btn-label">Review</span>
+          </button>
+          <button class="nav-btn" @click="setActiveTab('myTours')">
+            <span class="btn-label">My Tours</span>
           </button>
 
           <!-- Cart dugme -->
@@ -71,13 +73,17 @@
 
       <ProfileTourist v-else-if="activeTab === 'profile'" />
 
-      <PositionSimulator v-else-if="activeTab === 'simulator'" />
+
+      <MyTours
+        v-else-if="activeTab === 'myTours'"
+        @start-tour="handleStartTour"
+      />
 
       <ActiveTour
         v-else-if="activeTab === 'activeTour'"
-        :tour-id="3"
+        :tour-id="selectedActiveTourId"
         :tourist-id="currentUserId"
-        @back="setActiveTab('allTours')"
+        @back="setActiveTab('myTours')"
       />
 
       <ReviewTours v-else-if="activeTab === 'reviewTours'" />
@@ -97,7 +103,6 @@ import axios from 'axios';
 import AllToursTourist from './Tourist/AllToursTourist.vue';
 import TouristTourDetail from './Tourist/TouristTourDetail.vue';
 import TourDetail from './TourDetail.vue';
-import PositionSimulator from './Tourist/PositionSimulator.vue';
 import AllBlogs from './AllBlogs.vue';
 import MyBlogs from './MyBlogs.vue';
 import ProfileTourist from './Tourist/ProfileTourist.vue';
@@ -106,19 +111,21 @@ import ActiveTour from './Tourist/ActiveTour.vue';
 import ReviewTours from './Tourist/ReviewTours.vue';
 import ReviewForm from './Tourist/ReviewForm.vue';
 import ShoppingCart from './Tourist/ShoppingCart.vue';
+import MyTours from './Tourist/MyTours.vue';
 
 export default {
   components: {
-    AllToursTourist, TouristTourDetail, TourDetail, PositionSimulator,
+    AllToursTourist, TouristTourDetail, TourDetail, 
     AllBlogs, MyBlogs, Profile, ProfileTourist, ActiveTour, ReviewTours,
-    ReviewForm, ShoppingCart
+    ReviewForm, ShoppingCart,MyTours
   },
   data() {
     return {
       activeTab: 'allTours',
       selectedTourId: null,
       currentUserId: Number(localStorage.getItem('userId')),
-      cartCount: 0
+      cartCount: 0,
+      selectedActiveTourId: null,
     };
   },
   mounted() {
@@ -149,8 +156,12 @@ export default {
     logout() {
       localStorage.clear();
       this.$router.push('/');
+    },
+    handleStartTour(tourId) {
+      this.selectedActiveTourId = tourId;
+      this.activeTab = 'activeTour';
     }
-  }
+    }
 };
 </script>
 
