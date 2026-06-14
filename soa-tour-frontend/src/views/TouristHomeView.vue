@@ -21,9 +21,7 @@
           <button class="nav-btn" :class="{ active: activeTab === 'profile' }" @click="setActiveTab('profile')">
             <span class="btn-label">Profile</span>
           </button>
-          <button class="nav-btn" :class="{ active: activeTab === 'simulator' }" @click="setActiveTab('simulator')">
-            <span class="btn-label">Simulator</span>
-          </button>
+         
 
           <button class="nav-btn" :class="{ active: activeTab === 'reviewTours' }" @click="setActiveTab('reviewTours')">
 
