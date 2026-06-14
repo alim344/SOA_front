@@ -4,55 +4,65 @@
       <div class="sidebar-top">
 
         <div class="sidebar-header">
-            <span class="logo-text">Tour<span class="highlight">City</span></span>
+          <span class="logo-text">Tour<span class="highlight">City</span></span>
           <div class="instructor-tag">Tourist</div>
         </div>
 
-
         <nav class="nav-buttons">
-          <button class="nav-btn" @click="setActiveTab('allTours')">
+          <button class="nav-btn" :class="{ active: activeTab === 'allTours' }" @click="setActiveTab('allTours')">
             <span class="btn-label">All Tours</span>
           </button>
-          <button class="nav-btn" @click="setActiveTab('allBlogs')">
+          <button class="nav-btn" :class="{ active: activeTab === 'allBlogs' }" @click="setActiveTab('allBlogs')">
             <span class="btn-label">All Blogs</span>
           </button>
-          <button class="nav-btn" @click="setActiveTab('myBlogs')">
+          <button class="nav-btn" :class="{ active: activeTab === 'myBlogs' }" @click="setActiveTab('myBlogs')">
             <span class="btn-label">My Blogs</span>
           </button>
-          <button class="nav-btn" @click="setActiveTab('profile')">
+          <button class="nav-btn" :class="{ active: activeTab === 'profile' }" @click="setActiveTab('profile')">
             <span class="btn-label">Profile</span>
           </button>
-          <button class="nav-btn" @click="setActiveTab('simulator')">
+          <button class="nav-btn" :class="{ active: activeTab === 'simulator' }" @click="setActiveTab('simulator')">
             <span class="btn-label">Simulator</span>
           </button>
-          <button class="nav-btn" @click="setActiveTab('activeTour')">
+          <button class="nav-btn" :class="{ active: activeTab === 'activeTour' }" @click="setActiveTab('activeTour')">
             <span class="btn-label">Active Tour</span>
           </button>
-          <button class="nav-btn" @click="setActiveTab('reviewTours')">
+          <button class="nav-btn" :class="{ active: activeTab === 'reviewTours' }" @click="setActiveTab('reviewTours')">
             <span class="btn-label">Review</span>
           </button>
 
+          <!-- Cart dugme -->
+          <button class="nav-btn cart-nav-btn" :class="{ active: activeTab === 'cart' }" @click="setActiveTab('cart')">
+            <span class="btn-label">My Cart</span>
+            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
+          </button>
         </nav>
       </div>
 
       <div class="sidebar-footer">
-        <button class="logout-btn">
+        <button class="logout-btn" @click="logout">
           <span class="btn-label">Log out</span>
         </button>
       </div>
     </aside>
 
     <main class="content-area">
-      <AllToursTourist v-if="activeTab === 'allTours'" @view-tour="handleViewTour" />
+      <AllToursTourist
+        v-if="activeTab === 'allTours'"
+        @view-tour="handleViewTour"
+        @cart-updated="refreshCartCount"
+      />
 
-      <!-- Tour Detail za turistu -->
-      <TouristTourDetail v-else-if="activeTab === 'tourDetail'" :tour-id="selectedTourId" @back="setActiveTab('allTours')" />
+      <TouristTourDetail
+        v-else-if="activeTab === 'tourDetail'"
+        :tour-id="selectedTourId"
+        @back="setActiveTab('allTours')"
+      />
 
-      <AllBlogs  v-else-if="activeTab === 'allBlogs'" class="content-panel">
+      <AllBlogs v-else-if="activeTab === 'allBlogs'" class="content-panel">
         <h2>All Blogs</h2>
         <p>Read our latest travel blogs...</p>
-      </AllBlogs >
-
+      </AllBlogs>
 
       <MyBlogs v-else-if="activeTab === 'myBlogs'" class="content-panel">
         <h2>My Blogs</h2>
@@ -62,45 +72,59 @@
       <ProfileTourist v-else-if="activeTab === 'profile'" />
 
       <PositionSimulator v-else-if="activeTab === 'simulator'" />
+
       <ActiveTour
         v-else-if="activeTab === 'activeTour'"
         :tour-id="3"
         :tourist-id="currentUserId"
         @back="setActiveTab('allTours')"
       />
+
       <ReviewTours v-else-if="activeTab === 'reviewTours'" />
-  </main>
+
+      <!-- Shopping Cart -->
+      <ShoppingCart
+        v-else-if="activeTab === 'cart'"
+        @go-to-tours="setActiveTab('allTours')"
+        @cart-updated="refreshCartCount"
+      />
+    </main>
   </div>
 </template>
 
 <script>
-import AllToursTourist  from './Tourist/AllToursTourist.vue';
-import TouristTourDetail from './Tourist/TouristTourDetail.vue'
+import axios from 'axios';
+import AllToursTourist from './Tourist/AllToursTourist.vue';
+import TouristTourDetail from './Tourist/TouristTourDetail.vue';
 import TourDetail from './TourDetail.vue';
 import PositionSimulator from './Tourist/PositionSimulator.vue';
-import AllBlogs from './AllBlogs.vue'
-import MyBlogs from './MyBlogs.vue'
-import ProfileTourist from "./Tourist/ProfileTourist.vue";
-import Profile from "./Guide/Profile.vue";
+import AllBlogs from './AllBlogs.vue';
+import MyBlogs from './MyBlogs.vue';
+import ProfileTourist from './Tourist/ProfileTourist.vue';
+import Profile from './Guide/Profile.vue';
 import ActiveTour from './Tourist/ActiveTour.vue';
-import ReviewTours from "./Tourist/ReviewTours.vue";
-import ReviewForm from "./Tourist/ReviewForm.vue";
+import ReviewTours from './Tourist/ReviewTours.vue';
+import ReviewForm from './Tourist/ReviewForm.vue';
+import ShoppingCart from './Tourist/ShoppingCart.vue';
 
 export default {
-
-  components:{
-
-    AllToursTourist, TouristTourDetail,TourDetail,PositionSimulator, AllBlogs, MyBlogs,
-    Profile, ProfileTourist,ActiveTour, ReviewTours, ReviewForm
+  components: {
+    AllToursTourist, TouristTourDetail, TourDetail, PositionSimulator,
+    AllBlogs, MyBlogs, Profile, ProfileTourist, ActiveTour, ReviewTours,
+    ReviewForm, ShoppingCart
   },
-  data(){
-    return{
-      activeTab:'allTours',
-      selectedTourId:null,
-      currentUserId: Number(localStorage.getItem('userId'))
+  data() {
+    return {
+      activeTab: 'allTours',
+      selectedTourId: null,
+      currentUserId: Number(localStorage.getItem('userId')),
+      cartCount: 0
     };
   },
-   methods: {
+  mounted() {
+    this.refreshCartCount();
+  },
+  methods: {
     setActiveTab(tab) {
       this.activeTab = tab;
     },
@@ -108,10 +132,24 @@ export default {
       this.selectedTourId = tourId;
       this.activeTab = 'tourDetail';
     },
-     goBack() {
+    goBack() {
       this.setActiveTab('allTours');
+    },
+    async refreshCartCount() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://localhost:8000/purchase/cart', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.cartCount = (res.data.items || []).length;
+      } catch {
+        this.cartCount = 0;
+      }
+    },
+    logout() {
+      localStorage.clear();
+      this.$router.push('/');
     }
-
   }
 };
 </script>
@@ -156,16 +194,6 @@ export default {
   border-bottom: 2px solid #eef2f6;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo-icon {
-  font-size: 28px;
-}
-
 .logo-text {
   font-size: 20px;
   font-weight: 700;
@@ -179,13 +207,12 @@ export default {
 }
 
 .instructor-tag {
-  background: #e9ecef;
+  background: #eaf4e8;
   padding: 4px 10px;
   border-radius: 40px;
   font-size: 12px;
   font-weight: 600;
   color: #2d6a4f;
-  background: #eaf4e8;
   letter-spacing: 0.3px;
 }
 
@@ -211,12 +238,7 @@ export default {
   width: 100%;
   text-align: left;
   font-family: inherit;
-}
-
-.nav-btn .btn-icon {
-  font-size: 20px;
-  width: 28px;
-  text-align: center;
+  position: relative;
 }
 
 .nav-btn .btn-label {
@@ -232,6 +254,40 @@ export default {
 .nav-btn:active {
   background: #e2e8f0;
   transform: scale(0.98);
+}
+
+.nav-btn.active {
+  background: #eaf4e8;
+  color: #1b4d3e;
+  font-weight: 700;
+}
+
+/* Cart dugme */
+.cart-nav-btn {
+  margin-top: 8px;
+  border-top: 1px solid #eef2f6;
+  padding-top: 20px;
+}
+
+.cart-badge {
+  background: #2d6a4f;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  animation: pop 0.2s ease;
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.7); }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .sidebar-footer {
@@ -257,10 +313,6 @@ export default {
   font-family: inherit;
 }
 
-.logout-btn .btn-icon {
-  font-size: 20px;
-}
-
 .logout-btn .btn-label {
   font-weight: 600;
 }
@@ -274,11 +326,8 @@ export default {
 .content-area {
   flex: 1;
   min-width: 0;
-  padding: 20px 20px;
+  padding: 20px;
   background: #f7f9fe;
   overflow-y: auto;
 }
-
-
-
 </style>
