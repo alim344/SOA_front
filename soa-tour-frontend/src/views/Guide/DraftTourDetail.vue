@@ -34,8 +34,16 @@
           </span>
         </div>
         <div class="meta-card">
-          <span class="meta-label">Price</span>
-          <span class="price">${{ formatPrice(tour.price) }}</span>
+          <div class="meta-label">Price</div>
+          <div class="price-wrapper" v-if="!editingPrice">
+            <span class="price">${{ formatPrice(tour.price) }}</span>
+            <button v-if="tour.status === 'DRAFT'" @click="startEditPrice" class="edit-price-btn">Edit</button>
+          </div>
+          <div v-else class="price-edit">
+            <input type="number" v-model.number="tempPrice" step="0.5" class="price-input" />
+            <button @click="savePrice" class="save-price-btn">Save</button>
+            <button @click="cancelEditPrice" class="cancel-price-btn">Cancel</button>
+          </div>
         </div>
         <div class="meta-card" v-if="tour.totalDistance > 0">
           <span class="meta-label">Distance</span>
@@ -193,7 +201,9 @@ export default {
       newDuration: {
         transportType: 'WALKING',
         minutes: null
-      }
+      },
+      editingPrice: false,
+      tempPrice: 0
     };
   },
   mounted() {
@@ -444,12 +454,80 @@ export default {
 
     getStatusClass(status) {
       return status === 'DRAFT' ? 'status-draft' : 'status-published';
+    },
+
+    startEditPrice() {
+      this.tempPrice = this.tour.price;
+      this.editingPrice = true;
+    },
+
+    cancelEditPrice() {
+      this.editingPrice = false;
+    },
+
+    async savePrice() {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.put(`http://localhost:8000/tour/${this.tourId}/price`, {
+          price: this.tempPrice
+        }, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        this.tour.price = this.tempPrice;
+        this.editingPrice = false;
+      } catch (err) {
+        alert('Failed to update price');
+      }
     }
   }
 };
 </script>
 
 <style scoped>
+
+.edit-price-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 8px;
+  color: #94a3b8;
+}
+
+.edit-price-btn:hover {
+  color: #2d6a4f;
+}
+
+.price-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.price-input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.save-price-btn, .cancel-price-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+}
+
+.save-price-btn {
+  color: #2d6a4f;
+}
+
+.cancel-price-btn {
+  color: #ef4444;
+}
 
 .tour-detail-container {
   background: #f8fafc;
