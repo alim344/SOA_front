@@ -39,8 +39,10 @@ const routes = [
     name: 'Review',
     component: Review
   },
-  { path: '/register', 
-    component: RegisterView }
+  {
+    path: '/register',
+    component: RegisterView
+  },
 ]
 
 const router = createRouter({

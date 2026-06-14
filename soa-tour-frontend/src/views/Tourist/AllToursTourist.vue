@@ -1,3 +1,4 @@
+<!-- AllTours.vue -->
 <template>
   <div class="tours-container">
     <h2 class="page-title">All Tours</h2>
@@ -17,10 +18,6 @@
         <h3 class="tour-name">{{ tour.name }}</h3>
         <p class="tour-description">{{ truncateText(tour.description, 100) }}</p>
 
-        <div v-if="firstKeyPoint(tour)" class="first-keypoint-preview">
-          <span class="preview-text">{{ firstKeyPoint(tour).name }}</span>
-        </div>
-
         <div class="tour-meta">
           <div class="meta-item">
             <span class="meta-label">Difficulty:</span>
@@ -38,9 +35,29 @@
           </div>
         </div>
 
-        <button @click="viewTourDetails(tour.id)" class="see-more-btn">
-          See More →
-        </button>
+        <div class="card-actions">
+          <button @click="viewTourDetails(tour.id)" class="see-more-btn">
+            See More →
+          </button>
+
+          <!-- Dugme za turiste -->
+          <button
+            v-if="isTourist"
+            @click="addToCart(tour.id)"
+            :disabled="cartTourIds.has(tour.id) || loadingCart[tour.id]"
+            class="cart-btn"
+            :class="{ 'in-cart': cartTourIds.has(tour.id) }"
+          >
+            <span v-if="loadingCart[tour.id]">...</span>
+            <span v-else-if="cartTourIds.has(tour.id)">✓ In Cart</span>
+            <span v-else>+ Add to Cart</span>
+          </button>
+        </div>
+
+        <!-- Toast poruka po kartici -->
+        <div v-if="toastMap[tour.id]" class="card-toast" :class="toastMap[tour.id].type">
+          {{ toastMap[tour.id].message }}
+        </div>
       </div>
     </div>
   </div>
@@ -50,29 +67,36 @@
 import axios from 'axios';
 
 export default {
-  name: 'TouristAllTours',
+  name: "AllTours",
   data() {
     return {
       tours: [],
-      keyPointsCache: {},
       loading: true,
-      error: null
+      error: null,
+      cartTourIds: new Set(),
+      loadingCart: {},
+      toastMap: {}
     };
+  },
+  computed: {
+    isTourist() {
+      const role = localStorage.getItem('role');
+      return role === 'ROLE_TOURIST';
+    }
   },
   mounted() {
     this.fetchTours();
+    if (this.isTourist) {
+      this.fetchCart();
+    }
   },
   methods: {
     async fetchTours() {
       this.loading = true;
       this.error = null;
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:8000/tour/getAllActiveTours', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await axios.get('http://localhost:8000/tour/getAllActiveTours');
         this.tours = response.data;
-        await this.loadFirstKeyPoints();
       } catch (err) {
         this.error = 'Failed to load tours. Please try again.';
         console.error('Error fetching tours:', err);
@@ -81,24 +105,47 @@ export default {
       }
     },
 
-    async loadFirstKeyPoints() {
-      const token = localStorage.getItem('token');
-      for (const tour of this.tours) {
-        try {
-          const response = await axios.get(`http://localhost:8000/keypoint/getDtosByTour/${tour.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (response.data && response.data.length > 0) {
-            this.keyPointsCache[tour.id] = response.data[0];
-          }
-        } catch (err) {
-          console.error(`Failed to load key points for tour ${tour.id}`);
-        }
+    async fetchCart() {
+      // Učitaj korpu da znamo koje ture su već dodane
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://localhost:8000/purchase/cart', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const ids = (res.data.items || []).map(i => Number(i.tour_id));
+        this.cartTourIds = new Set(ids);
+      } catch {
+        // Korpa prazna ili greška — ignorisati
       }
     },
 
-    firstKeyPoint(tour) {
-      return this.keyPointsCache[tour.id];
+    async addToCart(tourId) {
+      const token = localStorage.getItem('token');
+      this.loadingCart = { ...this.loadingCart, [tourId]: true };
+      try {
+        await axios.post(
+          'http://localhost:8000/purchase/add',
+          { tour_id: tourId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        this.cartTourIds = new Set([...this.cartTourIds, tourId]);
+        this.showCardToast(tourId, 'Added to cart!', 'success');
+        this.$emit('cart-updated');
+      } catch (err) {
+        const msg = err.response?.data?.error || 'Could not add to cart.';
+        this.showCardToast(tourId, msg, 'error');
+      } finally {
+        this.loadingCart = { ...this.loadingCart, [tourId]: false };
+      }
+    },
+
+    showCardToast(tourId, message, type) {
+      this.toastMap = { ...this.toastMap, [tourId]: { message, type } };
+      setTimeout(() => {
+        const updated = { ...this.toastMap };
+        delete updated[tourId];
+        this.toastMap = updated;
+      }, 2500);
     },
 
     viewTourDetails(tourId) {
@@ -162,6 +209,7 @@ export default {
   border: 1px solid #eef2f6;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .tour-card:hover {
@@ -184,28 +232,6 @@ export default {
   margin-bottom: 16px;
 }
 
-.first-keypoint-preview {
-  background: #f1f5f9;
-  padding: 8px 12px;
-  border-radius: 12px;
-  margin: 8px 0;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #475569;
-}
-
-.preview-icon {
-  font-size: 14px;
-}
-
-.preview-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .tour-meta {
   margin: 16px 0;
   padding: 12px 0;
@@ -220,9 +246,7 @@ export default {
   font-size: 13px;
 }
 
-.meta-item:last-child {
-  margin-bottom: 0;
-}
+.meta-item:last-child { margin-bottom: 0; }
 
 .meta-label {
   color: #64748b;
@@ -236,20 +260,9 @@ export default {
   font-size: 11px;
 }
 
-.difficulty-level.easy {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.difficulty-level.moderate {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.difficulty-level.hard {
-  background: #fee2e2;
-  color: #991b1b;
-}
+.difficulty-level.easy { background: #d1fae5; color: #065f46; }
+.difficulty-level.moderate { background: #fef3c7; color: #92400e; }
+.difficulty-level.hard { background: #fee2e2; color: #991b1b; }
 
 .price {
   font-weight: 700;
@@ -265,12 +278,19 @@ export default {
   border-radius: 12px;
 }
 
-.see-more-btn {
+.card-actions {
   margin-top: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.see-more-btn {
+  flex: 1;
   background: linear-gradient(135deg, #2d6a4f, #1b4d3e);
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 12px 16px;
   border-radius: 40px;
   font-weight: 600;
   cursor: pointer;
@@ -281,6 +301,56 @@ export default {
 .see-more-btn:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
+}
+
+.cart-btn {
+  flex: 1;
+  background: white;
+  color: #2d6a4f;
+  border: 2px solid #2d6a4f;
+  padding: 10px 16px;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.cart-btn:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+
+.cart-btn.in-cart {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+  cursor: default;
+}
+
+.cart-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.card-toast {
+  position: absolute;
+  bottom: 70px;
+  left: 16px;
+  right: 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.card-toast.success { background: #d1fae5; color: #065f46; }
+.card-toast.error { background: #fee2e2; color: #991b1b; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .loading-state, .error-state {
